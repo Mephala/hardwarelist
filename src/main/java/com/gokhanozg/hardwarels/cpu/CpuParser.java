@@ -5,10 +5,10 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import javax.annotation.PostConstruct;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -17,28 +17,27 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Gokhan Ozgozen on 29-Dec-18.
  */
+@Component
 public class CpuParser {
 
     private static final long TIME_OUT = 300;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-    private static ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private List<CPU> allCpu;
 
-    public static void main(String[] args) {
-        try {
 
-            Future<List<CPU>> highEndCpusFuture = executorService.submit(CpuParser::parseHighEndCpus);
-            Future<List<CPU>> midRangeCpusFuture = executorService.submit(CpuParser::parseMidRangeCpus);
-            Future<List<CPU>> lowEndCpusFuture = executorService.submit(CpuParser::parseLowEndCpus);
-            Future<List<CPU>> lowestEndCpusFuture = executorService.submit(CpuParser::parseLowestEndCpus);
-            Future<List<CPU>> singleThreadCpusFuture = executorService.submit(CpuParser::parseSingleThreadCpus);
-            List<CPU> singleThreadResults = singleThreadCpusFuture.get(TIME_OUT, TIME_UNIT);
-            List<CPU> lowestEndCpus = lowestEndCpusFuture.get(TIME_OUT, TIME_UNIT);
-            List<CPU> lowEndCpus = lowEndCpusFuture.get(TIME_OUT, TIME_UNIT);
-            List<CPU> midRangeCpus = midRangeCpusFuture.get(TIME_OUT, TIME_UNIT);
-            List<CPU> highEndCpus = highEndCpusFuture.get(TIME_OUT, TIME_UNIT);
-            System.out.println("Single thread cpu results size:" + singleThreadResults.size());
-        } catch (Throwable t) {
-            t.printStackTrace();
+    public List<CPU> getAllCpu() {
+        return allCpu;
+    }
+
+    private void setSingleThreadResults(List<CPU> multiThreadCPUResults, List<CPU> singleThreadCPUResults) {
+        for (CPU multiThreadCPUResult : multiThreadCPUResults) {
+            for (CPU singleThreadCPUResult : singleThreadCPUResults) {
+                if (singleThreadCPUResult.getCpuName().equals(multiThreadCPUResult.getCpuName())) {
+                    multiThreadCPUResult.setSingleThreadPerformance(singleThreadCPUResult.getMultiThreadPerformance());
+                    break;
+                }
+            }
         }
     }
 
@@ -147,5 +146,43 @@ public class CpuParser {
             cpu.setDollarPrice(Double.parseDouble(price));
         }
         return cpu;
+    }
+
+    @PostConstruct
+    public void initializeCpuList() {
+        try {
+
+            Future<List<CPU>> highEndCpusFuture = executorService.submit(CpuParser::parseHighEndCpus);
+            Future<List<CPU>> midRangeCpusFuture = executorService.submit(CpuParser::parseMidRangeCpus);
+            Future<List<CPU>> lowEndCpusFuture = executorService.submit(CpuParser::parseLowEndCpus);
+            Future<List<CPU>> lowestEndCpusFuture = executorService.submit(CpuParser::parseLowestEndCpus);
+            Future<List<CPU>> singleThreadCpusFuture = executorService.submit(CpuParser::parseSingleThreadCpus);
+            List<CPU> singleThreadResults = singleThreadCpusFuture.get(TIME_OUT, TIME_UNIT);
+            List<CPU> lowestEndCpus = lowestEndCpusFuture.get(TIME_OUT, TIME_UNIT);
+            List<CPU> lowEndCpus = lowEndCpusFuture.get(TIME_OUT, TIME_UNIT);
+            List<CPU> midRangeCpus = midRangeCpusFuture.get(TIME_OUT, TIME_UNIT);
+            List<CPU> highEndCpus = highEndCpusFuture.get(TIME_OUT, TIME_UNIT);
+            Thread t1 = new Thread(() -> setSingleThreadResults(lowestEndCpus, singleThreadResults));
+            Thread t2 = new Thread(() -> setSingleThreadResults(lowEndCpus, singleThreadResults));
+            Thread t3 = new Thread(() -> setSingleThreadResults(midRangeCpus, singleThreadResults));
+            Thread t4 = new Thread(() -> setSingleThreadResults(highEndCpus, singleThreadResults));
+            t1.start();
+            t2.start();
+            t3.start();
+            t4.start();
+            t1.join();
+            t2.join();
+            t3.join();
+            t4.join();
+            Set<CPU> allCpus = new HashSet<>(highEndCpus);
+            allCpus.addAll(midRangeCpus);
+            allCpus.addAll(lowEndCpus);
+            allCpus.addAll(lowestEndCpus);
+            allCpus.removeIf(next -> next.getSingleThreadPerformance() == null || next.getDollarPrice() == null);
+            this.allCpu = new ArrayList<>(allCpus);
+            System.out.println("Finished initializing cpu list!");
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 }

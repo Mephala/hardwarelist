@@ -1,5 +1,7 @@
 package com.gokhanozg.hardwarels.cpu;
 
+import java.util.Objects;
+
 /**
  * Created by Gokhan Ozgozen on 29-Dec-18.
  */
@@ -50,6 +52,10 @@ public class CPU {
 
     public void setSingleThreadPerformance(Double singleThreadPerformance) {
         this.singleThreadPerformance = singleThreadPerformance;
+        if (dollarPrice != null) {
+            this.multiThreadDollarPricePerformance = multiThreadPerformance / dollarPrice;
+            this.singleThreadDollarPricePerformance = singleThreadPerformance / dollarPrice;
+        }
     }
 
     public Double getMultiThreadDollarPricePerformance() {
@@ -73,5 +79,18 @@ public class CPU {
         return "CPU{" +
                 "cpuName='" + cpuName + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CPU)) return false;
+        CPU cpu = (CPU) o;
+        return Objects.equals(cpuName, cpu.cpuName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cpuName);
     }
 }
