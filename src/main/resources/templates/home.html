@@ -4,6 +4,18 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.css">
 </header>
 <body>
+<table border="0" cellspacing="5" cellpadding="5">
+    <tbody>
+    <tr>
+        <td>Minimum Single Thread Performance:</td>
+        <td><input type="number" id="minST" name="minST"></td>
+    </tr>
+    <tr>
+        <td>Minimum Multi Thread Performance:</td>
+        <td><input type="number" id="minMT" name="minMT"></td>
+    </tr>
+    </tbody>
+</table>
 <table id="table_id" class="display" style="width:100%">
     <thead>
     <tr>
@@ -41,8 +53,42 @@
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.js"></script>
 
 <script>
+    $.fn.dataTable.ext.search.push(
+        function (settings, data, dataIndex) {
+            var mtMin = parseInt($('#minMT').val(), 10);
+            var stMin = parseInt($('#minST').val(), 10);
+            var stPerf = parseFloat(data[1]) || 0;
+            var mtPerf = parseFloat(data[3]) || 0;
+            console.log('Doing stuff');
+            if (isNaN(mtMin) && isNaN(stMin)) {
+                return true;
+            } else if (isNaN(mtMin) && !isNaN(stMin) && stPerf > stMin) {
+                return true;
+            } else if (isNaN(stMin) && !isNaN(mtMin) && mtPerf > mtMin) {
+                return true;
+            } else if (stPerf > stMin && mtPerf > mtMin) {
+                return true;
+            }
+
+            return false;
+
+            //
+            // if ( ( isNaN( min ) && isNaN( max ) ) ||
+            //     ( isNaN( min ) && age <= max ) ||
+            //     ( min <= age   && isNaN( max ) ) ||
+            //     ( min <= age   && age <= max ) )
+            // {
+            //     return true;
+            // }
+            // return false;
+        }
+    );
     $(document).ready(function () {
-        $('#table_id').DataTable();
+        var table = $('#table_id').DataTable();
+
+        $('#minMT, #minST').keyup(function () {
+            table.draw();
+        });
     });
 </script>
 </body>

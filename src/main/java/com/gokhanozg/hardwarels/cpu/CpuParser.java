@@ -151,7 +151,7 @@ public class CpuParser {
     @PostConstruct
     public void initializeCpuList() {
         try {
-
+            System.out.println("Initializing cpu parser...");
             Future<List<CPU>> highEndCpusFuture = executorService.submit(CpuParser::parseHighEndCpus);
             Future<List<CPU>> midRangeCpusFuture = executorService.submit(CpuParser::parseMidRangeCpus);
             Future<List<CPU>> lowEndCpusFuture = executorService.submit(CpuParser::parseLowEndCpus);
