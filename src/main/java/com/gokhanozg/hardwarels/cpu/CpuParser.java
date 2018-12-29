@@ -239,9 +239,19 @@ public class CpuParser {
                 executorService.submit(() -> fillCpuInformation(cpu));
             }
             System.out.println("Finished initializing cpu list!");
-            executorService.shutdown();
-            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-            System.out.println("Finished filling all additional cpu information.");
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        executorService.shutdown();
+                        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+                        System.out.println("Finished filling all additional cpu information.");
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    }
+                }
+            }).start();
+
         } catch (Throwable t) {
             t.printStackTrace();
         }
