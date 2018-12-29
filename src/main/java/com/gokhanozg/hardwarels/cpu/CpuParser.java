@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by Gokhan Ozgozen on 29-Dec-18.
@@ -25,6 +26,7 @@ public class CpuParser {
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
     private ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private List<CPU> allCpu;
+    private AtomicInteger atomicInteger = new AtomicInteger(0);
 
 
     public List<CPU> getAllCpu() {
@@ -81,6 +83,10 @@ public class CpuParser {
                         cpu.setL3Cache(values.get(5));
                         cpu.setTdp(values.get(6));
                         cpu.setReleased(values.get(7));
+                        int cpuInfoCount = atomicInteger.getAndIncrement();
+                        if (cpuInfoCount % 10 == 0) {
+                            System.out.println("Finished filling cpu information for the " + cpuInfoCount + "th time");
+                        }
                     }
                 }
             }
@@ -233,6 +239,9 @@ public class CpuParser {
                 executorService.submit(() -> fillCpuInformation(cpu));
             }
             System.out.println("Finished initializing cpu list!");
+            executorService.shutdown();
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+            System.out.println("Finished filling all additional cpu information.");
         } catch (Throwable t) {
             t.printStackTrace();
         }
