@@ -13,6 +13,78 @@ public class CPU {
     private Double singleThreadDollarPricePerformance;
     private Double dollarPrice;
     private Double liraPrice;
+    private String codeName;
+    private String cores;
+    private String clock;
+    private String socket;
+    private String litrhography;
+    private String l3Cache;
+    private String tdp;
+    private String released;
+
+    public String getCodeName() {
+        return codeName;
+    }
+
+    public void setCodeName(String codeName) {
+        this.codeName = codeName;
+    }
+
+    public String getCores() {
+        return cores;
+    }
+
+    public void setCores(String cores) {
+        this.cores = cores;
+    }
+
+    public String getClock() {
+        return clock;
+    }
+
+    public void setClock(String clock) {
+        this.clock = clock;
+    }
+
+    public String getSocket() {
+        return socket;
+    }
+
+    public void setSocket(String socket) {
+        this.socket = socket;
+    }
+
+    public String getLitrhography() {
+        return litrhography;
+    }
+
+    public void setLitrhography(String litrhography) {
+        this.litrhography = litrhography;
+    }
+
+    public String getL3Cache() {
+        return l3Cache;
+    }
+
+    public void setL3Cache(String l3Cache) {
+        this.l3Cache = l3Cache;
+    }
+
+    public String getTdp() {
+        return tdp;
+    }
+
+    public void setTdp(String tdp) {
+        this.tdp = tdp;
+    }
+
+    public String getReleased() {
+        return released;
+    }
+
+    public void setReleased(String released) {
+        this.released = released;
+    }
 
     public Double getSingleThreadDollarPricePerformance() {
         return singleThreadDollarPricePerformance;

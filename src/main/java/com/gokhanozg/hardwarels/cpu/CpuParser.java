@@ -8,6 +8,7 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,7 +23,7 @@ public class CpuParser {
 
     private static final long TIME_OUT = 300;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-    private ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private List<CPU> allCpu;
 
 
@@ -39,6 +40,54 @@ public class CpuParser {
                 }
             }
         }
+    }
+
+    private void fillCpuInformation(CPU cpu) {
+        try {
+            String cpuName = cpu.getCpuName();
+            int index = cpuName.indexOf("@");
+            if (index != -1) {
+                cpuName = cpuName.substring(0, index);
+                cpuName = cpuName.trim();
+            }
+            HttpClient client = new DefaultHttpClient();
+            HttpGet httpGet = new HttpGet("https://www.techpowerup.com/cpudb/?ajaxsrch=" + URLEncoder.encode(cpuName, "utf-8"));
+            HttpResponse response = client.execute(httpGet);
+            if (response.getStatusLine().getStatusCode() == 200) {
+                String responseString = EntityUtils.toString(response.getEntity());
+                String tag = "<a href=\"";
+                index = responseString.indexOf(tag);
+                if (index != -1) {
+                    responseString = responseString.substring(index + tag.length());
+                    List<String> values = new ArrayList<>();
+                    tag = "<td>";
+                    index = responseString.indexOf(tag);
+                    while (index != -1) {
+                        responseString = responseString.substring(index + tag.length());
+                        tag = "</td>";
+                        index = responseString.indexOf(tag);
+                        String value = responseString.substring(0, index);
+                        values.add(value);
+                        responseString = responseString.substring(index + tag.length());
+                        tag = "<td>";
+                        index = responseString.indexOf(tag);
+                    }
+                    if (values.size() == 8) {
+                        cpu.setCodeName(values.get(0));
+                        cpu.setCores(values.get(1));
+                        cpu.setClock(values.get(2));
+                        cpu.setSocket(values.get(3));
+                        cpu.setLitrhography(values.get(4));
+                        cpu.setL3Cache(values.get(5));
+                        cpu.setTdp(values.get(6));
+                        cpu.setReleased(values.get(7));
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+
     }
 
     private static List<CPU> parseLowestEndCpus() {
@@ -151,7 +200,7 @@ public class CpuParser {
     @PostConstruct
     public void initializeCpuList() {
         try {
-            System.out.println("Initializing cpu parser...");
+            System.out.println("Initializing cpu parser with " + Runtime.getRuntime().availableProcessors() + " number of cores...");
             Future<List<CPU>> highEndCpusFuture = executorService.submit(CpuParser::parseHighEndCpus);
             Future<List<CPU>> midRangeCpusFuture = executorService.submit(CpuParser::parseMidRangeCpus);
             Future<List<CPU>> lowEndCpusFuture = executorService.submit(CpuParser::parseLowEndCpus);
@@ -180,6 +229,9 @@ public class CpuParser {
             allCpus.addAll(lowestEndCpus);
             allCpus.removeIf(next -> next.getSingleThreadPerformance() == null || next.getDollarPrice() == null);
             this.allCpu = new ArrayList<>(allCpus);
+            for (CPU cpu : allCpus) {
+                executorService.submit(() -> fillCpuInformation(cpu));
+            }
             System.out.println("Finished initializing cpu list!");
         } catch (Throwable t) {
             t.printStackTrace();
