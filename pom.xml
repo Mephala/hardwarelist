@@ -85,7 +85,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.truvastore.frontend.TruvastoreFrontendApplication</mainClass>
+                    <mainClass>com.gokhanozg.hardwarels.HardwareListApplication</mainClass>
                     <includeSystemScope>true</includeSystemScope>
                 </configuration>
                 <executions>
