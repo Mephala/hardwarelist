@@ -53,6 +53,9 @@ public class CpuParser {
                 cpuName = cpuName.trim();
             }
             cpuName = cpuName.replaceAll("APU", "");
+            cpuName = cpuName.replaceAll("Quad-Core", "");
+            cpuName = cpuName.replaceAll("Six-Core", "");
+            cpuName = cpuName.replaceAll("Eight-Core", "");
             cpuName = cpuName.trim();
             HttpClient client = new DefaultHttpClient();
             String uri = "http://www.techpowerup.com/cpudb/?ajaxsrch=" + URLEncoder.encode(cpuName, "utf-8");
