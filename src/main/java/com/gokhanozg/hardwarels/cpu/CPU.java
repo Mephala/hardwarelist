@@ -1,5 +1,6 @@
 package com.gokhanozg.hardwarels.cpu;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
@@ -127,6 +128,8 @@ public class CPU {
         if (dollarPrice != null) {
             this.multiThreadDollarPricePerformance = multiThreadPerformance / dollarPrice;
             this.singleThreadDollarPricePerformance = singleThreadPerformance / dollarPrice;
+            this.multiThreadDollarPricePerformance = BigDecimal.valueOf(multiThreadDollarPricePerformance).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+            this.singleThreadDollarPricePerformance = BigDecimal.valueOf(singleThreadDollarPricePerformance).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
         }
     }
 

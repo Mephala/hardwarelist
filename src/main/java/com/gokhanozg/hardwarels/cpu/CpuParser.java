@@ -52,48 +52,92 @@ public class CpuParser {
                 cpuName = cpuName.substring(0, index);
                 cpuName = cpuName.trim();
             }
+            cpuName = cpuName.replaceAll("APU", "");
+            cpuName = cpuName.trim();
             HttpClient client = new DefaultHttpClient();
-            HttpGet httpGet = new HttpGet("https://www.techpowerup.com/cpudb/?ajaxsrch=" + URLEncoder.encode(cpuName, "utf-8"));
+            String uri = "http://www.techpowerup.com/cpudb/?ajaxsrch=" + URLEncoder.encode(cpuName, "utf-8");
+            HttpGet httpGet = new HttpGet(uri);
             HttpResponse response = client.execute(httpGet);
             if (response.getStatusLine().getStatusCode() == 200) {
                 String responseString = EntityUtils.toString(response.getEntity());
-                String tag = "<a href=\"";
+                String tag = "</thead>";
                 index = responseString.indexOf(tag);
                 if (index != -1) {
-                    responseString = responseString.substring(index + tag.length());
                     List<String> values = new ArrayList<>();
-                    tag = "<td>";
-                    index = responseString.indexOf(tag);
-                    while (index != -1) {
-                        responseString = responseString.substring(index + tag.length());
-                        tag = "</td>";
+                    while (responseString.contains("<td>")) {
+                        tag = "<a href=\"";
                         index = responseString.indexOf(tag);
-                        String value = responseString.substring(0, index);
-                        values.add(value);
-                        responseString = responseString.substring(index + tag.length());
-                        tag = "<td>";
-                        index = responseString.indexOf(tag);
-                    }
-                    if (values.size() == 8) {
-                        cpu.setCodeName(values.get(0));
-                        cpu.setCores(values.get(1));
-                        cpu.setClock(values.get(2));
-                        cpu.setSocket(values.get(3));
-                        cpu.setLitrhography(values.get(4));
-                        cpu.setL3Cache(values.get(5));
-                        cpu.setTdp(values.get(6));
-                        cpu.setReleased(values.get(7));
-                        int cpuInfoCount = atomicInteger.getAndIncrement();
-                        if (cpuInfoCount % 10 == 0) {
-                            System.out.println("Finished filling cpu information for the " + cpuInfoCount + "th time");
+                        if (index != -1) {
+                            responseString = responseString.substring(index + tag.length());
+                            tag = ">";
+                            index = responseString.indexOf(tag);
+                            responseString = responseString.substring(index + tag.length());
+                            tag = "</a>";
+                            index = responseString.indexOf(tag);
+                            String value = responseString.substring(0, index);
+                            values.add(value);
+                            responseString = responseString.substring(index + tag.length());
+                            tag = "</tr>";
+                            index = responseString.indexOf(tag);
+                            String rowString = responseString.substring(0, index);
+                            processRowString(rowString, values);
+                            responseString = responseString.substring(index + tag.length());
+                        }
+                        if (values.size() == 9) {
+                            cpu.setCodeName(values.get(1));
+                            cpu.setCores(values.get(2));
+                            cpu.setClock(values.get(3));
+                            cpu.setSocket(values.get(4));
+                            cpu.setLitrhography(values.get(5));
+                            cpu.setL3Cache(values.get(6));
+                            cpu.setTdp(values.get(7));
+                            cpu.setReleased(values.get(8));
+                            int cpuInfoCount = atomicInteger.getAndIncrement();
+                            if (cpuInfoCount % 10 == 0) {
+                                System.out.println("Finished filling cpu information for the " + cpuInfoCount + "th time");
+                            }
+                        } else {
+                            for (int i = 0; i < values.size(); i += 9) {
+                                String name = values.get(i);
+                                if (cpuName.contains(name)) {
+                                    cpu.setCodeName(values.get(i + 1));
+                                    cpu.setCores(values.get(i + 2));
+                                    cpu.setClock(values.get(i + 3));
+                                    cpu.setSocket(values.get(i + 4));
+                                    cpu.setLitrhography(values.get(i + 5));
+                                    cpu.setL3Cache(values.get(i + 6));
+                                    cpu.setTdp(values.get(i + 7));
+                                    cpu.setReleased(values.get(i + 8));
+                                }
+                            }
                         }
                     }
                 }
+            } else {
+                System.out.println("Bad response for filling up cpu details");
             }
         } catch (Throwable t) {
             t.printStackTrace();
         }
 
+    }
+
+    private void processRowString(String rowString, List<String> values) {
+
+        String responseString = rowString;
+        String tag = "<td>";
+        int index = responseString.indexOf(tag);
+
+        while (index != -1) {
+            responseString = responseString.substring(index + tag.length());
+            tag = "</td>";
+            index = responseString.indexOf(tag);
+            String value = responseString.substring(0, index);
+            values.add(value);
+            responseString = responseString.substring(index + tag.length());
+            tag = "<td>";
+            index = responseString.indexOf(tag);
+        }
     }
 
     private static List<CPU> parseLowestEndCpus() {
@@ -245,7 +289,9 @@ public class CpuParser {
                     try {
                         executorService.shutdown();
                         executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+
                         System.out.println("Finished filling all additional cpu information.");
+
                     } catch (Throwable t) {
                         t.printStackTrace();
                     }
